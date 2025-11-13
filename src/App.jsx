@@ -6,6 +6,7 @@ import Trilhas from "./pages/Trilhas";
 import Missoes from "./pages/Missoes";
 import Ranking from "./pages/Ranking";
 import Assistant from "./pages/Assistant";
+import Login from "./pages/Login";              
 
 import {
   mockUser,
@@ -16,8 +17,7 @@ import {
 } from "./data/mocks";
 import { recomendarConteudo } from "./utils/recommend";
 import { getJSON, setJSON } from "./utils/storage";
-import api from "./services/api";
-import Login from "./pages/login";
+import api from "./services/api";                
 
 export default function App() {
   // se não houver user salvo, App inicia no login
@@ -25,22 +25,24 @@ export default function App() {
   const [tab, setTab] = useState(() => getJSON("evolv:tab", "Dashboard"));
 
   const [trilhas, setTrilhas] = useState(mockTrilhas);
-  const [missoes, setMissoes] = useState(() => getJSON("evolv:missoes", mockMissoes));
+  const [missoes, setMissoes] = useState(() =>
+    getJSON("evolv:missoes", mockMissoes)
+  );
   const [ranking, setRanking] = useState(mockRanking);
   const [recomendados, setRecomendados] = useState([]);
 
   const [loading, setLoading] = useState(!!user); // só carrega da API se houver user
   const [error, setError] = useState(null);
 
-  // Login handler (frontend-only)
+  // Login handler (via backend)
   function handleLogin(usuarioDoBackend, { persist = true } = {}) {
-    const usuario = { ...(usuarioDoBackend) };   // vem com id, nome, nivel
+    const usuario = { ...(usuarioDoBackend || mockUser) }; // vem com id, nome, nivel
     setUser(usuario);
     if (persist) setJSON("evolv:user", usuario);
     setTab("Dashboard");
     setJSON("evolv:tab", "Dashboard");
     setLoading(true); // dispara carregamento inicial (trilhas, missoes, ranking, recs)
-  }    
+  }
 
   // Logout handler
   function handleLogout() {
@@ -56,6 +58,14 @@ export default function App() {
   }, [user]);
   useEffect(() => setJSON("evolv:tab", tab), [tab]);
   useEffect(() => setJSON("evolv:missoes", missoes), [missoes]);
+
+  //  Envia evento sempre que a aba muda
+  useEffect(() => {
+    if (!user) return;
+    api
+      .postEvent({ userId: user.id || 1, type: "tab_changed", meta: { tab } })
+      .catch(() => {}); // não quebrar UI se API cair
+  }, [tab, user]);
 
   // Carregar dados iniciais da API quando tiver usuário
   useEffect(() => {
@@ -116,7 +126,9 @@ export default function App() {
       const alvo = missoes.find((m) => m.id === id);
       if (!alvo) return;
       const novoFeito = !alvo.feito;
-      setMissoes((ms) => ms.map((m) => (m.id === id ? { ...m, feito: novoFeito } : m)));
+      setMissoes((ms) =>
+        ms.map((m) => (m.id === id ? { ...m, feito: novoFeito } : m))
+      );
 
       await api.patchMissao(id, { feito: novoFeito });
 
@@ -141,7 +153,7 @@ export default function App() {
     }
   }
 
-  // 🔐 Se não há user logado, mostre a tela de Login
+  // Se não há user logado, mostre a tela de Login
   if (!user) return <Login onLogin={handleLogin} />;
 
   if (loading) {
@@ -177,7 +189,9 @@ export default function App() {
 
         {tab === "Trilhas" && <Trilhas mockTrilhas={trilhas} />}
 
-        {tab === "Missões" && <Missoes missoes={missoes} toggleMissao={toggleMissao} />}
+        {tab === "Missões" && (
+          <Missoes missoes={missoes} toggleMissao={toggleMissao} />
+        )}
 
         {tab === "Ranking" && <Ranking mockRanking={ranking} />}
 
@@ -185,7 +199,9 @@ export default function App() {
           <Assistant
             user={user}
             setUser={(fnOrObj) =>
-              setUser((prev) => (typeof fnOrObj === "function" ? fnOrObj(prev) : fnOrObj))
+              setUser((prev) =>
+                typeof fnOrObj === "function" ? fnOrObj(prev) : fnOrObj
+              )
             }
             recomendados={recomendados}
           />
