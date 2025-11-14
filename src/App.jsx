@@ -6,7 +6,8 @@ import Trilhas from "./pages/Trilhas";
 import Missoes from "./pages/Missoes";
 import Ranking from "./pages/Ranking";
 import Assistant from "./pages/Assistant";
-import Login from "./pages/Login";              
+import Login from "./pages/Login";   
+import Insights from "./pages/Insights";           
 
 import {
   mockUser,
@@ -206,6 +207,7 @@ export default function App() {
             recomendados={recomendados}
           />
         )}
+         {tab === "Insights" && <Insights user={user} />}
       </div>
     </div>
   );

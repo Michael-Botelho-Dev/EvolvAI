@@ -52,6 +52,10 @@ export const api = {
   // Login
   login: ({ nome, nivel }) =>
     request('/login', { method: 'POST', body: JSON.stringify({ nome, nivel }) }),
+
+  // Insights
+  getInsights: (userId = 1) => request(`/insights?userId=${userId}`),
+  
 };
 
 export default api;
